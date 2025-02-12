@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Titus House Employee Feedback</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            color: #000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        .container {
+            background: #fff;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            max-width: 500px;
+            width: 100%;
+            text-align: center;
+        }
+        .question {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 20px;
+        }
+        .input-field, .scale-field {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #000;
+            border-radius: 5px;
+            font-size: 16px;
+            margin-bottom: 20px;
+        }
+        .scale-field label {
+            display: block;
+            text-align: left;
+            margin-bottom: 5px;
+        }
+        .btn {
+            background-color: #004aad;
+            color: #fff;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        .btn:hover {
+            background-color: #002a6b;
+        }
+        .btn[disabled] {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+        .btn-container {
+            display: flex;
+            justify-content: space-between;
+        }
+        .hidden {
+            display: none;
+        }
+        .completion-message {
+            text-align: center;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>Welcome and Thank You!</h2>
+        <p>We appreciate your time in providing valuable feedback to help improve Titus House. Your insights will guide us in making a better workplace for everyone.</p>
+        <form id="surveyForm">
+            <div id="questionContainer">
+                <div class="question" id="questionText"></div>
+                <input type="text" id="answerInput" name="answer" class="input-field hidden" placeholder="Your answer here...">
+                <div id="scaleInput" class="scale-field hidden">
+                    <label><input type="radio" name="scale" value="1"> 1 - Strongly Disagree</label>
+                    <label><input type="radio" name="scale" value="2"> 2 - Disagree</label>
+                    <label><input type="radio" name="scale" value="3"> 3 - Neutral</label>
+                    <label><input type="radio" name="scale" value="4"> 4 - Agree</label>
+                    <label><input type="radio" name="scale" value="5"> 5 - Strongly Agree</label>
+                </div>
+                <div class="btn-container">
+                    <button type="button" class="btn" id="nextBtn">Next</button>
+                    <button type="button" class="btn" id="downloadBtn" disabled>Download PDF</button>
+                </div>
+            </div>
+        </form>
+        <div id="completionMessage" class="completion-message hidden">
+            <h2>Thank you for completing the survey!</h2>
+            <p>Your responses have been recorded. We appreciate your valuable feedback.</p>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const { jsPDF } = window.jspdf;
+            
+            const questions = [
+                { text: "How would you describe the organization’s communication and leadership support, and what improvements would you suggest?", type: "text" },
+                { text: "I feel a sense of purpose and fulfillment in my work at Titus House.", type: "scale" },
+                { text: "Are there any resources, tools, or training opportunities you feel would help you be more effective in your role?", type: "text" },
+                { text: "Titus House provides adequate resources and training to help me succeed in my role.", type: "scale" },
+                { text: "What has Titus House done well to contribute to making you feel valued?", type: "text" },
+                { text: "I feel supported by my supervisors and leadership when I encounter challenges at work.", type: "scale" },
+                { text: "How can the organization recognize and reward your contributions in a way that feels meaningful to you?", type: "text" },
+                { text: "The workplace culture at Titus House is inclusive, respectful, and supportive.", type: "scale" },
+                { text: "I feel that Titus House values employee feedback and takes action based on our concerns.", type: "scale" },
+                { text: "What challenges do you face in your daily work, and how can the organization better support you in overcoming them?", type: "text" }
+            ];
+            
+            let currentQuestionIndex = 0;
+            let responses = [];
+            const questionText = document.getElementById("questionText");
+            const answerInput = document.getElementById("answerInput");
+            const scaleInput = document.getElementById("scaleInput");
+            const nextBtn = document.getElementById("nextBtn");
+            const downloadBtn = document.getElementById("downloadBtn");
+            const completionMessage = document.getElementById("completionMessage");
+            
+            function loadQuestion() {
+                if (currentQuestionIndex < questions.length) {
+                    questionText.innerText = questions[currentQuestionIndex].text;
+                    answerInput.value = "";
+                    document.querySelectorAll('input[name="scale"]').forEach(radio => radio.checked = false);
+                    if (questions[currentQuestionIndex].type === "text") {
+                        answerInput.classList.remove("hidden");
+                        scaleInput.classList.add("hidden");
+                    } else {
+                        answerInput.classList.add("hidden");
+                        scaleInput.classList.remove("hidden");
+                    }
+                } else {
+                    nextBtn.classList.add("hidden");
+                    downloadBtn.removeAttribute("disabled");
+                    completionMessage.classList.remove("hidden");
+                }
+            }
+            
+            nextBtn.addEventListener("click", function () {
+                const answer = answerInput.value || document.querySelector('input[name="scale"]:checked')?.value || "Not answered";
+                responses.push({ question: questions[currentQuestionIndex].text, answer: answer });
+                currentQuestionIndex++;
+                loadQuestion();
+            });
+
+            downloadBtn.addEventListener("click", function () {
+                const doc = new jsPDF();
+                let yOffset = 10;
+                doc.setFontSize(12);
+                responses.forEach(response => {
+                    doc.text(`Question: ${response.question}`, 10, yOffset);
+                    yOffset += 10;
+                    doc.text(`Answer: ${response.answer}`, 10, yOffset);
+                    yOffset += 10;
+                });
+                doc.save("survey_responses.pdf");
+            });
+            
+            loadQuestion();
+        });
+    </script>
+</body>
+</html>
